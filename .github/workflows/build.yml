@@ -80,5 +80,5 @@ jobs:
             dpkg -i <package_name>.deb
             ```
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN_SOLIDITY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
