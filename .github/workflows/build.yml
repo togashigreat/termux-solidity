@@ -31,18 +31,9 @@ jobs:
           mkdir -p scripts
           # Ensure properties.sh exists so 'source' commands inside build-package.sh don't crash
           touch scripts/properties.sh
-
           # Freshly wipe and initialize output folders to avoid cross-architecture bleeding
           rm -rf output staging_release
           mkdir -p output staging_release
-
-          # FIX: Re-create the folder structure build-package.sh expects for key verification
-          mkdir -p packages/termux-keyring
-
-          # Fetch the official public signing keys so the dependency fetcher (-i) can verify packages
-          curl -sL "https://raw.githubusercontent.com/termux/termux-packages/master/packages/termux-keyring/grimler.gpg" -o packages/termux-keyring/grimler.gpg
-          curl -sL "https://raw.githubusercontent.com/termux/termux-packages/master/packages/termux-keyring/termux-autobuilds.gpg" -o packages/termux-keyring/termux-autobuilds.gpg
-          curl -sL "https://raw.githubusercontent.com/termux/termux-packages/master/packages/termux-keyring/xeffyr.gpg" -o packages/termux-keyring/xeffyr.gpg
 
       - name: Build Solidity via Termux Docker Toolchain
         run: |
