@@ -1,0 +1,13 @@
+{
+  "builds": [
+    {
+      "version": "0.8.18",
+      "sha256": "0x3b5fcab212163199ee0b53d9ed107875c5eed935a70f8ca8b9519323c1a13e39",
+      "path": "solc-v0.8.18+commit.87f61d96",
+      "prerelease": null
+    }
+  ],
+  "releases": {
+    "0.8.18": "solc-v0.8.18+commit.87f61d96"
+  }
+}
