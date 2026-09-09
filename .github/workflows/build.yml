@@ -101,26 +101,23 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout main branch (for scripts/)
         uses: actions/checkout@v4
 
-      - name: Checkout solc-bin branch
-        uses: actions/checkout@v4
-        with:
-          ref: solc-bin
-          path: solc-bin
-          fetch-depth: 0
-        continue-on-error: true
-
-      - name: Create solc-bin branch if it doesn't exist yet
+      - name: Prepare solc-bin branch (clone if it exists, init fresh if not)
         run: |
-          if [ ! -d solc-bin/.git ]; then
+          set -euo pipefail
+          REPO_URL="https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+          if git ls-remote --exit-code --heads origin solc-bin >/dev/null 2>&1; then
+            echo "solc-bin exists remotely — cloning it"
+            git clone --single-branch --branch solc-bin "${REPO_URL}" solc-bin
+          else
+            echo "solc-bin does not exist yet — initializing a fresh orphan branch"
             mkdir -p solc-bin
-            cd solc-bin
-            git init
-            git checkout --orphan solc-bin
-            git commit --allow-empty -m "Initialize solc-bin branch"
+            git -C solc-bin init -b solc-bin
           fi
 
       - name: Download all architecture binaries + commit hashes
