@@ -5,9 +5,16 @@
       "sha256": "0x3e1038093ba6ad1cdfb673e422adb2dd5098db6ed6e59b959d7b8a7d3621258b",
       "path": "solc-v0.8.18+commit.87f61d96",
       "prerelease": null
+    },
+    {
+      "version": "0.8.19",
+      "sha256": "0xacab91f585f79dd08806a86aa1c5ad37f7df81877a5cf5e0a4d9296b308d713f",
+      "path": "solc-v0.8.19+commit.7dd6d404",
+      "prerelease": null
     }
   ],
   "releases": {
-    "0.8.18": "solc-v0.8.18+commit.87f61d96"
+    "0.8.18": "solc-v0.8.18+commit.87f61d96",
+    "0.8.19": "solc-v0.8.19+commit.7dd6d404"
   }
 }
