@@ -81,7 +81,7 @@ if printf '%s\n0.8.27\n' "${VERSION}" | sort -V -C; then
 fi
 
 # Solidity >= 0.8.31: drop header-only targets (range-v3, nlohmann_json) and old Boost_SYSTEM_LIBRARY
-if printf '%s\n0.8.31\n' "${VERSION}" | sort -V -C; then
+if printf '%s\n0.8.27\n' "${VERSION}" | sort -V -C; then
     if [ -f libsolutil/CMakeLists.txt ]; then
         sed -i -E 's/target_link_libraries\(solutil PUBLIC Boost::boost Boost::filesystem \$\{Boost_SYSTEM_LIBRARY\} range-v3 fmt::fmt-header-only nlohmann_json::nlohmann_json\)/target_link_libraries(solutil PUBLIC Boost::boost Boost::filesystem fmt::fmt-header-only)/' libsolutil/CMakeLists.txt
     fi
