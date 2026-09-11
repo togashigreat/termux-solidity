@@ -73,6 +73,13 @@ if [ -f CMakeLists.txt ]; then
     sed -i '/include(EthDependencies)/a if(NOT TARGET Boost::system)\n  add_library(Boost::system INTERFACE IMPORTED)\nendif()' CMakeLists.txt
 fi
 
+# In Solidity >= 0.8.27 with IGNORE_VENDORED_DEPENDENCIES=ON, fmtlib must be included
+# unconditionally rather than skipped inside the vendored check.
+if printf '%s\n0.8.27\n' "${VERSION}" | sort -V -C; then
+    sed -i '/include(EthDependencies)/a include(fmtlib)' CMakeLists.txt
+    sed -i '/if *(NOT IGNORE_VENDORED_DEPENDENCIES)/{n;/include(fmtlib)/d}' CMakeLists.txt
+fi
+
 # Fix CMake CMP0144 policy warning for modern CMake
 sed -i '1s/^/cmake_policy(SET CMP0144 NEW)\n/' CMakeLists.txt
 
