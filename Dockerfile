@@ -43,7 +43,7 @@ RUN for arch in aarch64 arm i686 x86_64; do \
       mkdir -p "${prefix}/lib" "${prefix}/include" "${prefix}/bin"; \
       packages_url="https://packages.termux.dev/apt/termux-main/dists/stable/main/binary-${arch}/Packages"; \
       packages_list=$(curl -s "${packages_url}"); \
-      for pkg in boost boost-static boost-headers z3 fmt libandroid-support libiconv; do \
+      for pkg in boost boost-static boost-headers z3 fmt nlohmann-json range-v3 libandroid-support libiconv; do \
         url=$(echo "${packages_list}" | \
               awk -v p="^$pkg$" '$1 == "Package:" && $2 ~ p {found=1} found && $1 == "Filename:" {print "https://packages.termux.dev/apt/termux-main/" $2; exit}'); \
         if [ -n "$url" ]; then \
