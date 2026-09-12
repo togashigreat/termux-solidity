@@ -23,7 +23,7 @@ scripts/
                           # GitHub Release (for humans) and the `solc-bin` branch (for svm-rs)
 ```
 
-Built binaries and their `list.json` release manifests live on the [`solc-bin`](../../tree/solc-bin) branch, under `android/<arch>/`. That branch is unrelated history to `main` (an orphan branch) — it exists purely as a stable hosting location, the same pattern [`alloy-rs/solc-builds`](https://github.com/alloy-rs/solc-builds) and [`nikitastupin/solc`](https://github.com/nikitastupin/solc) use for the platforms `svm-rs` already supports upstream.
+Built binaries and their `list.json` release manifests live on the [`solc-bin`](../../tree/solc-bin) branch, under `android/<arch>/`. That branch is unrelated history to `main` (an orphan branch) — it exists purely as a stable hosting location, the same pattern [`alloy-rs/solc-builds`](https://github.com/alloy-rs/solc-builds).
 
 ## Usage
 
