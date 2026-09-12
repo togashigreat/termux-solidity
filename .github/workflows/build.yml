@@ -1,0 +1,163 @@
+name: Build Solidity for Termux (all architectures)
+
+on:
+  workflow_dispatch:
+    inputs:
+      solc_version:
+        description: "Solidity version tag (e.g. 0.8.18)"
+        required: true
+        default: "0.8.18"
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [aarch64, arm, i686, x86_64]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Set lowercase repository owner
+        id: prep
+        run: |
+          echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compile solc for ${{ matrix.arch }}
+        env:
+          TARGET_VERSION: ${{ inputs.solc_version }}
+          TARGET_ARCH: ${{ matrix.arch }}
+          IMAGE_NAME: ghcr.io/${{ steps.prep.outputs.owner }}/solc-termux-builder:latest
+        run: |
+          mkdir -p dist
+          docker run --rm \
+            -v "${{ github.workspace }}/dist:/dist" \
+            "${IMAGE_NAME}" bash -c "
+              /workdir/build-solc.sh '${TARGET_VERSION}' '${TARGET_ARCH}' &&
+              cp /workdir/solidity/build/solc/solc /dist/solc-${TARGET_VERSION}-${TARGET_ARCH} &&
+              cp /workdir/solidity/commit_hash.txt /dist/commit-${TARGET_VERSION}-${TARGET_ARCH}.txt
+            "
+          # commit_hash.txt holds the full 40-char hash; svm-rs/solc-bin convention
+          # uses the short 8-char form (matches what `solc --version` prints).
+          cut -c1-8 "dist/commit-${TARGET_VERSION}-${TARGET_ARCH}.txt" > "dist/commit-${TARGET_VERSION}-${TARGET_ARCH}.txt.short"
+          mv "dist/commit-${TARGET_VERSION}-${TARGET_ARCH}.txt.short" "dist/commit-${TARGET_VERSION}-${TARGET_ARCH}.txt"
+
+      - name: Upload Binary + commit hash
+        uses: actions/upload-artifact@v4
+        with:
+          name: solc-${{ inputs.solc_version }}-${{ matrix.arch }}
+          path: |
+            dist/solc-${{ inputs.solc_version }}-${{ matrix.arch }}
+            dist/commit-${{ inputs.solc_version }}-${{ matrix.arch }}.txt
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Download all architecture binaries
+        uses: actions/download-artifact@v4
+        with:
+          pattern: solc-${{ inputs.solc_version }}-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Create or update GitHub Release
+        run: |
+          TAG="v${{ inputs.solc_version }}"
+          # Only attach the binaries (solc-*) as release assets, not the
+          # commit-*.txt sidecar files (those are for the publish-list job).
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists — uploading/replacing assets"
+            gh release upload "$TAG" release-assets/solc-* --clobber
+          else
+            gh release create "$TAG" release-assets/solc-* \
+              --title "solc ${{ inputs.solc_version }} (Termux)" \
+              --notes "Solidity ${{ inputs.solc_version }} compiled for Termux/Android: aarch64, arm, i686, x86_64."
+          fi
+
+  # Publishes to a dedicated `solc-bin` branch: a flat, ever-growing layout
+  # (android/<arch>/list.json + binaries) that svm-rs's Platform variants can
+  # fetch via a stable raw.githubusercontent.com URL — the same pattern
+  # alloy-rs/solc-builds and nikitastupin/solc already use for the platforms
+  # svm-rs currently supports. This is separate from the human-facing GitHub
+  # Release above because artifact_url() in svm-rs concatenates one fixed
+  # prefix + filename across ALL versions of a platform, which per-tag
+  # Release URLs can't provide.
+  publish-list:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout main branch (for scripts/)
+        uses: actions/checkout@v4
+
+      - name: Prepare solc-bin branch (clone if it exists, init fresh if not)
+        run: |
+          set -euo pipefail
+          REPO_URL="https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}.git"
+          if git ls-remote --exit-code --heads origin solc-bin >/dev/null 2>&1; then
+            echo "solc-bin exists remotely — cloning it"
+            git clone --single-branch --branch solc-bin "${REPO_URL}" solc-bin
+          else
+            echo "solc-bin does not exist yet — initializing a fresh orphan branch"
+            mkdir -p solc-bin
+            git -C solc-bin init -b solc-bin
+          fi
+
+      - name: Download all architecture binaries + commit hashes
+        uses: actions/download-artifact@v4
+        with:
+          pattern: solc-${{ inputs.solc_version }}-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Publish each architecture into solc-bin/android/<arch>/
+        env:
+          VERSION: ${{ inputs.solc_version }}
+        run: |
+          set -euo pipefail
+          # Termux's own package-repo naming ("i686") differs from Rust's
+          # std::env::consts::ARCH ("x86"), which is what svm-rs's platform()
+          # detection actually matches against — fold that mapping here so
+          # the published layout matches what svm-rs expects.
+          declare -A SVM_ARCH_NAME=( [aarch64]=aarch64 [arm]=arm [i686]=x86 [x86_64]=x86_64 )
+
+          for arch in aarch64 arm i686 x86_64; do
+            svm_arch="${SVM_ARCH_NAME[$arch]}"
+            commit_hash=$(cat "release-assets/commit-${VERSION}-${arch}.txt")
+            python3 scripts/publish_solc_bin.py \
+              --version "${VERSION}" \
+              --binary "release-assets/solc-${VERSION}-${arch}" \
+              --list-json "solc-bin/android/${svm_arch}/list.json" \
+              --commit-hash "${commit_hash}"
+          done
+
+      - name: Commit and push
+        run: |
+          cd solc-bin
+          git add android/
+          if git diff --cached --quiet; then
+            echo "Nothing changed, skipping commit"
+          else
+            git -c user.name="github-actions[bot]" \
+                -c user.email="github-actions[bot]@users.noreply.github.com" \
+                commit -m "solc ${{ inputs.solc_version }}: android aarch64/arm/x86/x86_64"
+            git push "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git" solc-bin
+          fi
+
