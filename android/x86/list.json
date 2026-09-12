@@ -83,6 +83,12 @@
       "sha256": "0x6d952caa30d7f22f700741cedf130a5b06040a07679e4d1ba34b4ec2ddcee488",
       "path": "solc-v0.8.31+commit.fd3a2265",
       "prerelease": null
+    },
+    {
+      "version": "0.8.32",
+      "sha256": "0x0334eb670b0456751498d1a353e6eb5b34513a06c56426bebdb080bc9f266d31",
+      "path": "solc-v0.8.32+commit.ebbd65e5",
+      "prerelease": null
     }
   ],
   "releases": {
@@ -99,6 +105,7 @@
     "0.8.28": "solc-v0.8.28+commit.7893614a",
     "0.8.29": "solc-v0.8.29+commit.ab55807c",
     "0.8.30": "solc-v0.8.30+commit.73712a01",
-    "0.8.31": "solc-v0.8.31+commit.fd3a2265"
+    "0.8.31": "solc-v0.8.31+commit.fd3a2265",
+    "0.8.32": "solc-v0.8.32+commit.ebbd65e5"
   }
 }
