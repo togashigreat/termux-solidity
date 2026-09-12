@@ -82,9 +82,11 @@ fi
 
 # Solidity >= 0.8.31: drop header-only targets (range-v3, nlohmann_json) and old Boost_SYSTEM_LIBRARY
 # Solidity >= 0.8.27: range-v3 and nlohmann-json are header-only, drop from solutil link line
-if printf '%s\n0.8.27\n' "${VERSION}" | sort -V -C; then
+# Solidity >= 0.8.27: range-v3 and nlohmann-json are header-only, drop from solutil link line
+if printf '0.8.27\n%s\n' "${VERSION}" | sort -V -C; then
     if [ -f libsolutil/CMakeLists.txt ]; then
-        sed -i -E 's/target_link_libraries\([[:space:]]*solutil[[:space:]]+PUBLIC[[:space:]]+Boost::boost[[:space:]]+Boost::filesystem([[:space:]]+\$\{Boost_SYSTEM_LIBRARY\})?[[:space:]]+range-v3[[:space:]]+fmt::fmt-header-only[[:space:]]+nlohmann_json::nlohmann_json\)/target_link_libraries(solutil PUBLIC Boost::boost Boost::filesystem fmt::fmt-header-only)/' libsolutil/CMakeLists.txt
+        sed -i '/nlohmann_json::nlohmann_json/d' libsolutil/CMakeLists.txt
+        sed -i '/range-v3/d' libsolutil/CMakeLists.txt
     fi
 fi
 
@@ -139,7 +141,7 @@ cmake -G Ninja .. \
     -DIGNORE_VENDORED_DEPENDENCIES=ON \
     -DSTRICT_NLOHMANN_JSON_VERSION=OFF \
     -DUSE_Z3=OFF \
-    -DUSE_CVC4=OFF \
+    -DUSE_CVC5=OFF \
     -DTESTS=OFF \
     -DSTRICT_Z3_VERSION=OFF \
     -DPEDANTIC=OFF \
